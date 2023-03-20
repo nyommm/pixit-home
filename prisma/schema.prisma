@@ -1,0 +1,60 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  userId          String    @id @default(auto()) @map("_id") @db.ObjectId
+  email           String    @unique
+  userName        String    @unique
+  createdProjects Project[] @relation(name: "project_creator")
+  ownedProjects   Project[] @relation(name: "project_owner")
+  projects        Project[] @relation(name: "project_collaborators", fields: [projectIds], references: [projectId])
+  projectIds      String[]  @db.ObjectId
+  createdFiles    File[]    @relation(name: "file_creator")
+  contributions   File[]    @relation(name: "contributors", fields: [contributionIds], references: [fileId])
+  contributionIds String[]  @db.ObjectId
+  favFiles        File[]    @relation(name: "fav_files", fields: [favFileIds], references: [fileId])
+  favFileIds      String[]  @db.ObjectId
+  createdDate     DateTime  @default(now())
+  updatedDate     DateTime  @updatedAt
+}
+
+model File {
+  fileId         String   @id @default(auto()) @map("_id") @db.ObjectId
+  fileName       String
+  layers         Json[]
+  palettes       Json[]
+  edits          Json[]
+  project        Project?  @relation(fields: [projectId], references: [projectId])
+  projectId      String?   @db.ObjectId
+  contributors   User[]   @relation(name: "contributors", fields: [contributorIds], references: [userId])
+  contributorIds String[] @db.ObjectId
+  creator        User     @relation(name: "file_creator", fields: [creatorId], references: [userId])
+  creatorId      String   @db.ObjectId
+  favoritedBy    User[]   @relation(name: "fav_files", fields: [favoritedByIds], references: [userId])
+  favoritedByIds String[] @db.ObjectId
+  createdDate    DateTime @default(now())
+  updatedDate    DateTime @updatedAt
+}
+
+model Project {
+  projectId       String   @id @default(auto()) @map("_id") @db.ObjectId
+  projectName     String
+  creator         User     @relation(name: "project_creator", fields: [creatorId], references: [userId])
+  creatorId       String   @db.ObjectId
+  owner           User     @relation(name: "project_owner", fields: [ownerId], references: [userId])
+  ownerId         String   @db.ObjectId
+  collaborators   User[]   @relation(name: "project_collaborators", fields: [collaboratorIds], references: [userId])
+  collaboratorIds String[] @db.ObjectId
+  files           File[]   @relation()
+  createdDate     DateTime @default(now())
+  updatedDate     DateTime @updatedAt
+}
